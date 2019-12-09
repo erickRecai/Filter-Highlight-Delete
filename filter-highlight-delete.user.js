@@ -22,7 +22,7 @@
     - logged matches now includes matched rules.
     - code cleanup
 
-    Filter searches through the delete list, then the lowlight rules and, finally the highlight rules.
+    Filter searches through the delete list, then the lowlight rules, and finally the highlight rules.
     If it matches something earlier in the lists, it won't check lower lists such as 
     if there was a match in the delete list, lowlight and highlight rules aren't checked.
     This can be changed by changing the checkBlock() function.
