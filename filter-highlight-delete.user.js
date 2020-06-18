@@ -1,15 +1,13 @@
 // ==UserScript==
 // @name         Filter, Highlight & Delete
-// @namespace    http://tampermonkey.net/
-// @version      1.1.2
+// @namespace    https://github.com/erickRecai
+// @version      1.04.06
 // @description  Highlights, Lowlights, or Deletes page elements based on their text.
-// @author       listfilterErick
-// @grant        none
+// @author       guyRicky
 
-// @match        *://news.google.com/*
-// @match        *://www.youtube.com/*
-// @match        *://www.reddit.com/r/*
+// @match        *://*/*
 
+// @exclude      *://docs.google.com/*
 // @require      https://code.jquery.com/jquery-3.4.1.min.js
 // @require      https://greasyfork.org/scripts/5392-waitforkeyelements/code/WaitForKeyElements.js?version=115012
 
@@ -17,258 +15,1033 @@
 // @licence      GPL-3.0-or-later; http://www.gnu.org/licenses/gpl-3.0.txt
 // ==/UserScript==
 /* jshint esversion: 6 */
-/*
-    Update 1.1.2 (09-22-2019)
-    - logged matches now includes matched rules.
-    - code cleanup
-
-    Filter searches through the delete list, then the lowlight rules, and finally the highlight rules.
-    If it matches something earlier in the lists, it won't check lower lists such as 
-    if there was a match in the delete list, lowlight and highlight rules aren't checked.
-    This can be changed by changing the checkBlock() function.
-
-    Google News: Only works for the front page of google news. Need a more robust selector for other special sections.
-    Reddit: Only works for compact view.
-
-    Search for these markers for locations where you need to add new selectors for new sites.
-    markA: define selector for block to apply css rules to. (needs to be valid for jquery and css)
-    markB: define selector for the text of the block.
-
-    The applied highlight/lowlight classes are:
-    lf-highlight1 (strong highlight)
-    lf-highlight2
-    lf-lowlight1
-    lf-lowlight2 (strong lowlight)
-*/
 
 (function () {
     'use strict';
 
-    // ==== filter lists ==========================================================================|
-    if (1) {
-        //strong highlight
-        var highlight1 = [
-            /apple/i,
-        ];
-        //weak highlight
-        var highlight2 = [
-            /gamestop/i,
-        ];
-        //weak lowlight
-        var lowlight1 = [
-            /goodbye/i,
-        ];
-        //strong lowlight
-        var lowlight2 = [
-            /\btv\b/i,
-        ];
-        //delete block
-        var delete1 = [
-            /throne|dany|\bgot\b/i,
-        ];
+    const scriptPrefix = "fhd-"; // for text elements excluding element classes.
+    const classPrefix = "fhd-"; // exclusively for element classes.
+    const scriptTag = "FHD"; // used to mark script sources in console log.
+
+    let runScript = 1;
+    const runScriptKey = "enable-"+ scriptPrefix +"script";
+    if (document.getElementById(runScriptKey)) { // check runScript option.
+        runScript = document.getElementById(runScriptKey).checked;
     }
 
-    const domainName = window.location.hostname;
-    const hrefString = window.location.href; //href lets you be more specific
-    let blockSelector = "article";
-    // ==== markA start ===========================================================================|
-    if (/news\.google\.com/gi.test(domainName)) {
-        blockSelector = "main>c-wiz>div>div";
-    } else if (/www\.youtube\.com/gi.test(domainName)) {
-        blockSelector = "ytd-compact-video-renderer";
-    } else if (/www\.reddit\.com/gi.test(domainName)) {
-        blockSelector = ".scrollerItem>div>div:nth-child(2)";
-    }
-    // ==== markA end =============================================================================|
+    if (runScript) {
 
-    // ==== script options ========================================================================|
-    const addFilterButton = 0; // set to 1 to show a button to manually run this script.
-    const buttonTransparency = .3; // set to a value between 0 and 1, 1 is no transparency, .5 is 50% transparency.
-    const dynamicChecking = 1; // set to 1 to run the script automatically when new block elements are detected.
+        if(0){/*
 
-    const enableLogMessages = 0; // set to 1 to enable console messages, required for the following message options.
-    const logMatches = 1; // set to 1 to log to console what was matched.
-    const logRuntime = 1; // set to 1 to log to console how long this takes to run.
+            == last update: 6/18/2020 ==
+    
+            ==  todo ==
+    
+            1. test gen version on google and reddit with custom rules.
 
-    function consolelog(text) {
-        if (enableLogMessages) {
-            console.log(text);
+            5. B1, change local rule retrieval to a function.
+            5. B2, (custom rules script), generate selector block from selectors made.
+            10. C1, change autohide notifs to apply per notif, not to all notifs.
+            20. Z1, implement priority.
+    
+            ==== how it works =====================================================================|
+    
+            - checks for "block selectors" from current href.
+            - if found and custom selectors are found (custom rules script), adds selectors set to list of selectors. 
+    
+            if there are block selectors
+            checkBlocks() {
+                foreach (selector set) {
+                    checkblock() {
+                        if (not checked previously) {
+                            check against delete1
+                            check against lowlight1
+                            * check against short1
+                            * check against short2
+                            check against highlight1
+                            check against highlight2
+                            check other things
+                            create notif if enabled.
+                        }
+                    } end checkblock()
+                } end foreach (selector set)
+                add 'checked' class to all checked elements
+            } end checkBlocks()
+    
+            == other notes
+            - applies checked marker to a block after a block is fully checked.
+    
+            ==== version log ======================================================================|
+            == 1.4.05 == -- "custom lists" --
+    
+            == 1.4.04 == -- "main filter" --
+            - updated to be sole filter
+            == 1.4.3 == -- "delete2" --
+            - updated for delete2 list.
+            == 1.4.2 == -- "checked marker"--
+            - changed how the checked marker class is added.
+            == 1.4.0 == --"notifs"--
+            - added notifs.
+            == 1.3.1 == -- "consolelog" --
+            - consolelog update.
+            == 1.3.0 ==
+            - implemented multiple selectors per site
+        */}
+
+        if(0){/*
+        
+            ==== code markers =====================================================================|
+
+            A0. console messages
+            AA. filter lists
+            AB. selectors by site list
+            AC. script options
+            
+            AD. setting parent selectors block
+            AE. main code start
+            AF. script CSS
+            AD. notif block
+
+            BA. checkBlock()
+            BB. checkBlocks()
+            BC. checkRegex()
+            BD. createNotif()
+
+            CA. script execution block
+            CB. script button
+            ZZ. script end
+
+        */}
+
+        // ==== A0. console messages ==============================================================|
+        // controls if messages are made to the browser's console.
+
+        let enableLogMessages = 1; // set to 1 to show console messages, required to enable the following message rules.
+        const enableConsoleMessagesKey = "log-"+ scriptPrefix +"msg";
+        if (document.getElementById(enableConsoleMessagesKey)) {
+            enableLogMessages = document.getElementById(enableConsoleMessagesKey).checked;
         }
-    }
-    consolelog("#### list filter script start. ####");
 
-    // ==== function definitions ==================================================================|
+        let enabledMessages =
+            "("+
+            "DLT|LL1|"+
+            //"-MA|"+ // all matches
+            "selectors|"+
 
-    // checks string against given list of regular expressions.
-    let regexLog = "";
-    function checkRegex(string, regexList) {
-        for (let i = 0; i < regexList.length; i++) {
-            if (regexList[i].test(string)) {
-                if (regexLog) {
-                    regexLog = regexLog +", "+ regexList[i];
-                }else {
-                    regexLog = regexList[i];
+            "local-rules|"+
+            //"secondText|"+
+            "blockHref|"+
+
+            "RUNT|"+ // run time messages.
+            "EXEC|"+ // execution messages.
+            "1"; // mainly 
+
+        let logAll = 0; // if 1, logs all titles from found blocks.
+        const logAllKey = "log-"+ scriptPrefix +"all";
+        if (document.getElementById(logAllKey)) {
+            logAll = document.getElementById(logAllKey).checked;
+        }
+        if (logAll) {
+            enabledMessages = enabledMessages.concat("|title");
+        }
+        enabledMessages = enabledMessages.concat(")");
+        const enabledMessagesRegex = new RegExp(enabledMessages,"i"); // used in consolelog().
+
+        consolelog("#### ("+ scriptTag +") start. ####", "EXEC");
+
+        // ==== AA. filter lists ==================================================================|
+        let delete1, delete2, lowlight1, lowlight2, highlight1, highlight2;
+        if (1) {
+
+            // ==== AAA. delete1 ==================================================================|
+            delete1 = [
+                
+            ];
+
+            // ==== AAB. delete2 ==================================================================|
+            delete2 = [
+            
+            ];
+
+            // ==== AAC. lowlight1 ================================================================|
+            //strong lowlight
+            lowlight1 = [
+
+            ];
+
+            // ==== AAD. lowlight2 ================================================================|
+            lowlight2 = [
+
+            ];
+
+            // ==== AAE. highlight1 ===============================================================|
+            highlight1 = [
+                /apple/i,
+            ];
+
+            // ==== AAF. highlight2 ===============================================================|
+            highlight2 = [
+            
+            ];
+
+            // ==== AAG. local rules ==============================================================|
+            
+            let keyName = "Delete1";
+            if (window.localStorage.getItem(keyName)) {
+                let localRules = window.localStorage.getItem(keyName);
+                localRules = localRules.split(";");
+                for (let index = 0; index < localRules.length; index++) { // converts a string of rules to an array of regex.
+
+                    localRules[index] = localRules[index].split("##")[0].trim();
+
+                    if (localRules[index]) {
+                        let ruleFlags = localRules[index].split("/")[1];
+                        if (ruleFlags) {
+                            ruleFlags = ruleFlags.trim();
+                            //console.log(ruleFlags);
+                        }
+                        localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
+                        localRules[index] = new RegExp(localRules[index], ruleFlags);
+                        ruleFlags = "";
+                    }
                 }
-                return true;
-            }
-        }
-        return false;
-    }
+                localRules = localRules.filter(Boolean);
+                consolelog(localRules, "local-rules");
 
-    let elementCounter = 0;
-
-    // check attributes of a block to choose what class to add to it.
-    function checkBlock(index, element) {
-
-        let searchText;
-
-        // ==== markB start =======================================================================|
-        if (/news\.google\.com/gi.test(domainName)) {
-            searchText = jQuery(this).find("div>article>h3").eq(0).text().trim();
-        } else if (/www\.youtube\.com/gi.test(domainName)) {
-            searchText = jQuery(this).find("span#video-title").text().trim();
-        } else if (/www\.reddit\.com/gi.test(domainName)) {
-            searchText = jQuery(this).find("span>a>h2").text().trim();
-        }
-        // ==== markB end =========================================================================|
-        searchText = searchText.trim();
-
-        // class list identifies what was checked in past iterations
-        let classList = "";
-        if (jQuery(this).attr("class")) {
-            classList = jQuery(this).attr("class");
-            //consolelog(classList);
-        }
-
-        if (searchText && (!classList || !/\blf-/.test(classList))) {
-            //if ( searchText ) {
-            var matchCode = "n1";
-
-            // stops after the first rule matched.
-            if (checkRegex(searchText, delete1)) {
-                matchCode = "d1";
-                jQuery(this).remove();
-            } else if (checkRegex(searchText, lowlight2)) {
-                matchCode = "l2";
-                jQuery(this).addClass("lf-lowlight2");
-            } else if (checkRegex(searchText, lowlight1)) {
-                matchCode = "l1";
-                jQuery(this).addClass("lf-lowlight1");
-            } else if (checkRegex(searchText, highlight1)) {
-                matchCode = "h1";
-                jQuery(this).addClass("lf-highlight1");
-            } else if (checkRegex(searchText, highlight2)) {
-                matchCode = "h2";
-                jQuery(this).addClass("lf-highlight2");
-            } else {
-                jQuery(this).addClass("lf-checked");
+                delete1 = delete1.concat(localRules);
             }
 
-            if (enableLogMessages && logMatches && !/n1/.test(matchCode)) { //shows all matches
-            //if (enableLogMessages && logMatches && /d|l/.test(matchCode)) { //shows only lowlight and delete matches
+            keyName = "Lowlight1";
+            if (window.localStorage.getItem(keyName)) {
+                let localRules = window.localStorage.getItem(keyName);
+                //console.log(localRules);
+                localRules = localRules.split(";");
+                //console.log(localRules);
+                //console.log(typeof localRules[0]);
+                for (let index = 0; index < localRules.length; index++) {
+
+                    localRules[index] = localRules[index].split("##")[0];
+
+                    if (localRules[index]) {
+                        let ruleFlags = localRules[index].split("/")[1];
+                        localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
+                        localRules[index] = new RegExp(localRules[index], ruleFlags);
+                        //console.log(localRules[index]);
+                        ruleFlags = "";
+                    }
+                }
+                localRules = localRules.filter(Boolean);
+                consolelog(localRules, "local-rules");
+
+                lowlight1 = lowlight1.concat(localRules);
+            }
+            
+            keyName = "Highlight1";
+            if (window.localStorage.getItem(keyName)) {
+                let localRules = window.localStorage.getItem(keyName);
+                //console.log(localRules);
+                localRules = localRules.split(";");
+                //console.log(localRules);
+                //console.log(typeof localRules[0]);
+                for (let index = 0; index < localRules.length; index++) {
+
+                    localRules[index] = localRules[index].split("##")[0];
+
+                    if (localRules[index]) {
+                        let ruleFlags = localRules[index].split("/")[1];
+                        localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
+                        localRules[index] = new RegExp(localRules[index], ruleFlags);
+                        //console.log(localRules[index]);
+                        ruleFlags = "";
+                    }
+                }
+                localRules = localRules.filter(Boolean);
+                consolelog(localRules, "local-rules");
+
+                highlight1 = highlight1.concat(localRules);
+            }
+
+        }
+
+        // ==== AB. selectors by site list ========================================================|
+        // needs to be set and matched to function on a site.
+
+        const domainName = window.location.hostname;
+        const hrefString = window.location.href; //href lets you be more specific
+
+        const selectorsList = [
+            {hrefRegex: /reddit\.com/i,
+                elementSelectors: [
+                    {superParentSelector: "div.ListingLayout-outerContainer div:nth-child(5)>div",
+                        textSelector: 'span>a>h2',
+                        secondTextSelector: "",
+                        hrefSelector: "",
+                        thirdTextSelector: ""},
+                    {superParentSelector: ".Comment",
+                        textSelector: 'div[data-test-id="comment"]>div>p',
+                        secondTextSelector: "",
+                        hrefSelector: "",
+                        thirdTextSelector: ""},
+
+            ]},
+
+            {hrefRegex: /www\.youtube\.com/i,
+                elementSelectors: [
+                    {superParentSelector: "ytd-compact-video-renderer",
+                        textSelector: 'span#video-title',
+                        secondTextSelector: "",
+                        hrefSelector: "",
+                        thirdTextSelector: ""},
+            ]},
+
+            {hrefRegex: /news\.google\.com/i,
+                elementSelectors: [
+                    {superParentSelector: "main>c-wiz>div>div",
+                        textSelector: 'div>article>h3>a',
+                        secondTextSelector: "article:nth-child(2)>div:nth-child(4)>div>a",
+                        hrefSelector: "",
+                        thirdTextSelector: ""},
+            ]},
+        ];
+        if(0){/*
+            {hrefRegex: ,
+                elementSelectors: [
+                    {superParentSelector: "", // required; selector for the parent block;
+                        textSelector: "", // ex: title
+                        secondTextSelector: "", //ex: source/author
+                        hrefSelector: "",
+                        thirdTextSelector: ""}, //ex: description
+                        // other than the parent selector, other selectors are optional, order not required.
+            ]},
+        */}
+
+        // ==== AC. script options ================================================================|
+
+        const generalizeSpace = 0; // default 0; if 1, the " " character in Regexs are replaced with (\W|_).
+
+        // ==== script options with local storage =================================================|
+        // these options are used as default if the option is not set by the user in (script options).
+
+        let markCheckedBlocks = 1; // default 1; does all possible checks before applying a special checked class.
+        const markCheckedKey = scriptPrefix +"mark-checked";
+        if (document.getElementById(markCheckedKey)) {
+            markCheckedBlocks = document.getElementById(markCheckedKey).checked;
+        }
+
+        let dynamicChecking = 1; // default 1; set to 1 to run the script automatically when new image elements are detected.
+        const dynamicCheckingKey = "enable-"+ scriptPrefix +"dynamic-checking";
+        if (document.getElementById(dynamicCheckingKey)) {
+            dynamicChecking = document.getElementById(dynamicCheckingKey).checked;
+        }
+
+        let logRuntimes = 1; // set to 1 to log to console how long this takes to run.
+
+        let disableDelete = 0; // if 1, delete matches are lowlight1 instead.
+        let deleteDelete2 = 0; // default 0;
+
+        // ==== AD. identifying parent selectors block ============================================|
+        let parentSelectors;
+        for (let index = 0; index < selectorsList.length; index++) { //if href match, sets custom filters
+            if (selectorsList[index]["hrefRegex"].test(hrefString)) {
+
+                let selectorsMessage =
+                    "("+ scriptTag +") href match: "+
+                    selectorsList[index]["hrefRegex"]
+                    ;
+                consolelog(selectorsMessage, "selectors");
+
+                parentSelectors = selectorsList[index]["elementSelectors"]; // array of selector sets, usually 1.
+                break;
+            }
+        }
+        
+        // ==== local selectors ====
+
+        let keyList = ["parentSelector", "textSelector", "secondTextSelector", "hrefSelector", "thirdTextSelector"];
+        if (window.localStorage.getItem(keyList[0])) {
+            let customSelectors = {
+                superParentSelector: window.localStorage.getItem(keyList[0]),
+                textSelector: window.localStorage.getItem(keyList[1]),
+                secondTextSelector: window.localStorage.getItem(keyList[2]),
+                hrefSelector: window.localStorage.getItem(keyList[3]),
+                thirdTextSelector: window.localStorage.getItem(keyList[4])
+            };
+            parentSelectors.push(customSelectors);
+        }
+
+        // ==== AE. main code start ===============================================================|
+        if (parentSelectors) {
+            
+            consolelog(parentSelectors, "selectors");
+
+            // ==== script labels ====
+            const checkedClassRegex = new RegExp("\\b"+ scriptTag +"element");
+
+            // ==== AF. script CSS ================================================================|
+            let enableScriptCSS = 1;
+            const scriptCSSKey = "log-"+ scriptPrefix +"all";
+            if (document.getElementById(scriptCSSKey)) {
+                enableScriptCSS = document.getElementById(scriptCSSKey).checked;
+            }
+            if  (enableScriptCSS)   {
+                const scriptCSS =
+    `<style type="text/css">
+        .`+classPrefix+`dlt1,
+        .`+classPrefix+`dlt2,
+        .`+classPrefix+`lowlight1
+        {opacity: .2;}
+
+        .`+classPrefix+`dlt1,
+        .`+classPrefix+`dlt2,
+        .`+classPrefix+`lowlight1 
+        {background: #f004 !important;}
+
+        .`+classPrefix+`lowlight2 {
+            opacity: .5;
+            background: #f004 !important;
+        }
+
+        .`+classPrefix+`highlight1
+        {background: #0f0 !important;}
+    </style>`;
+                jQuery(document.body).append(scriptCSS);
+            }
+
+            // ==== AD. notif block ===============================================================|
+
+            // ==== notification options ====
+
+            // 'script options' options
+            let enableBlockCounter = 1;
+            let enableNotifications = 1;
+            let autohideNotifs = 0; // default 0; notifs disappear after a set period of time.
+            let startCollapsed = 1; // default 1;
+
+            const enableCounterKey = "enable-"+ scriptPrefix +"counter";
+            if (document.getElementById(enableCounterKey)) {
+                enableBlockCounter = document.getElementById(enableCounterKey).checked;
+            }
+
+            const enableNotifKey = "enable-"+ scriptPrefix +"notifs";
+            if (document.getElementById(enableNotifKey)) {
+                enableNotifications = document.getElementById(enableNotifKey).checked;
+            }
+
+            // notif css variables.
+            const notifsHex = "#ddd";
+            const notifsOpacity = .4; // default .2; set to a value between 0 and 1, 1 is no transparency, .5 is 50% transparency.
+            const notifsWidth = 120; // default 120; width in pixels of each notification.
+
+            let notifContainerId = "notif-main-container";
+
+            // generate notif container if needed.
+            if ((enableBlockCounter || enableNotifications) && !jQuery("#"+ notifContainerId).length) {
+
+                // ==== setting/checking initial visual state of notifs ===========================|
+
+                // controlled exclusively by local storage or the default value.
+                const localStorageName = "notif start collapsed";
+                if (window.localStorage.getItem(localStorageName)) {
+                    startCollapsed = window.localStorage.getItem(localStorageName);
+                    startCollapsed = (startCollapsed == "true");
+                }
+
+                const visibleClass = "notif-visible";
+                const hiddenClass = "notif-hidden1";
+                let startingStateClass = visibleClass;
+                let otherStartingStateClass = hiddenClass;
+                if (startCollapsed) {
+                    startingStateClass = hiddenClass;
+                    otherStartingStateClass = visibleClass;
+                }
+
+                // ==== create container ==========================================================|
+                /*
+                [ notif main container
+                    [notif1] - content
+                    [hide] - button
+                    [open] - button
+                    [close] - button
+                    [clear] - button
+                    [notif2] - content
+                ]
+                - hide: makes visible open | hides close, clear, notif2
+                - open: makes visible hide, close, clear, notif2 | hides open
+                - close: deletes notif main container.
+                - clear: empties notif-container2
+                */
+
+            const openButtonId = "notif-open";
+            const hideButtonId = "notif-hide";
+
+                let notificationsElement =
+                    "<div id='"+ notifContainerId +"'>"+
+                        "<div id='notif-container1'></div>"+
+                        "<div id='"+ hideButtonId +"' class='notif-red notif-rounded-block "+ startingStateClass +"'>notif hide</div>"+
+                        "<div id='"+ openButtonId +"' class='notif-green notif-rounded-block "+ otherStartingStateClass +"'>notif open</div>"+
+                        "<div id='notif-close' class='notif-gray notif-rounded-block "+ startingStateClass +"'>close notif[]</div>"+
+                        "<div id='notif-clear' class='notif-orange notif-rounded-block "+ startingStateClass +"'>clear notif</div>"+
+                        "<div id='notif-container2' class=' "+ startingStateClass +"'>"+
+                            "<div id='dlt-container'></div>"+
+                            "<div id='ll-container' class='notif-hidden1'></div>"+
+                            "<div id='ot-container' class='notif-hidden1'></div>"+
+                        "</div>"+
+                    "</div>";
+                jQuery("body").prepend(notificationsElement);
+
+                let textReaderElement =
+                    "<div id='notif-text-overlay' class='notif-text-hidden'></div>";
+                jQuery("body").prepend(textReaderElement);
+
+                $('#notif-container2').on( {
+                    mouseenter: function () {
+                        let notifText = $(this).find(".notif-text").text();
+                        let notifClassList = this.className;
+                        if (/red/.test(notifClassList)) {
+                            jQuery("#notif-text-overlay").addClass("notif-red");
+                        }else if (/orange/.test(notifClassList)) {
+                            jQuery("#notif-text-overlay").addClass("notif-orange");
+                        }else if (/yellow/.test(notifClassList)) {
+                            jQuery("#notif-text-overlay").addClass("notif-yellow");
+                        }else {
+                            jQuery("#notif-text-overlay").addClass("notif-gray");
+                        }
+                        jQuery("#notif-text-overlay").text(notifText);
+                        jQuery("#notif-text-overlay").addClass("notif-text-visible");
+                    },
+                    mouseleave: function () {
+                        jQuery("#notif-text-overlay").removeClass("notif-text-visible");
+                        jQuery("#notif-text-overlay").removeClass("notif-red");
+                        jQuery("#notif-text-overlay").removeClass("notif-orange");
+                    }
+                }, '.notif-instance');
+
+                // ==== close ====
+                jQuery("#notif-close").click(function(){jQuery("#"+ notifContainerId).remove();});
+
+                // ==== clears container2 which contains notif instances. ====
+                function clearNotif(){
+                    jQuery("#notif-container2").empty();
+                }
+                jQuery("#notif-clear").click(clearNotif);
+
+                // ==== open/hide events ==========================================================|
+
+                const mainSelector = "#notif-container2, #"+ hideButtonId +", #notif-close, #notif-clear";
+
+                jQuery("#"+ hideButtonId).click(function () {
+                    //console.log(hideButtonId);
+                    window.localStorage.setItem(localStorageName, true);
+
+                    switchClasses(
+                        mainSelector,
+                        "#"+ openButtonId,
+                        visibleClass,
+                        hiddenClass
+                    );
+                });
+
+                jQuery("#"+ openButtonId).click(function () {
+                    //console.log(openButtonId);
+                    window.localStorage.setItem(localStorageName, false);
+
+                    switchClasses(
+                        mainSelector,
+                        "#"+ openButtonId,
+                        hiddenClass,
+                        visibleClass
+                    );
+                });
+
+                function switchClasses(mainSelector, subSelector, removedClass, newClass) {
+                    jQuery(mainSelector).removeClass(removedClass);
+                    jQuery(mainSelector).addClass(newClass);
+                    jQuery(subSelector).removeClass(newClass);
+                    jQuery(subSelector).addClass(removedClass);
+                }
+
+                // ==== notif CSS =================================================================|
+                if(1){var notifsCss =
+    `<style type="text/css">
+        #`+ notifContainerId +` {
+            width: `+ notifsWidth +`px;
+            max-height: 50%;
+            margin: 0 2px 2px;
+            display: block;
+
+            line-height: initial;
+            color: #000;
+            opacity: `+ notifsOpacity +`;
+            position: fixed;
+            top: 0px;
+            right: 0px;
+            z-index: 9999;
+            overflow-y: auto;
+        }
+        #`+ notifContainerId +`:hover {
+            opacity: 1;
+        }
+
+        .notif-rounded-block {
+            display: block;
+            padding: 2px;
+            border-radius: 3px;
+            margin-top: 2px;
+
+            font-size: 11px !important;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .s-counter {
+            display: block;
+            padding: 2px;
+            border-radius: 4px;
+            margin-top: 2px;
+
+            background: #ddd;
+            font-size: 11px !important;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .notif-text-hidden {
+            display:none;
+        }
+        .notif-text-visible {
+            display: block;
+            max-width: 50%;
+            padding: 5px;
+            border: #999 solid 2px;
+            border-radius: 10px;
+
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            z-index: 999999;
+
+
+            font-size: 15px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            color: black !important;
+        }
+
+        .notif-instance {
+            display: block;
+            padding: 2px;
+            border-radius: 4px;
+            margin-top: 2px;
+
+            background: `+ notifsHex +`;
+            font-size: 11px !important;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .notif-instance div{/* div holding the rule.*/
+            max-height: 12px;
+            padding: 0px;
+            margin: 0px;
+            border: 0px;
+
+            overflow: hidden;
+            word-break: break-all;
+        }
+        .notif-hidden{ /* meant to hide the rule */
+            opacity: .1;
+        }
+        .notif-hidden:hover {
+            opacity: 1;
+        }
+
+        .notif-red {
+            background: #f67066;
+        }
+        .notif-orange {
+            background: #ffc107; //yellowish
+        }
+        .notif-green {
+            background: #62bb66;
+        }
+        .notif-gray {
+            background: #777;
+        }
+
+        /* collapsible classes */
+        .notif-hidden1 {
+            display: none !important;
+        }
+        .notif-visible {
+            display: block !important;
+        }
+
+        div#ll-container, div#ot-container {
+            border-top: solid black 3px;
+        }
+    </style>`;
+                }
+                jQuery(document.body).append(notifsCss);
+            }
+
+            let blockCounterkey = "enable"+ scriptPrefix +"counter";
+            if (document.getElementById(blockCounterkey)) {
+                enableBlockCounter = document.getElementById(blockCounterkey).checked;
+            }
+            if (enableBlockCounter) {
+                jQuery("#notif-container1").prepend("<div id='"+ scriptTag +"-counter' class='s-counter .notif-rounded-block'>B No Blocks Matched.</div>");
+            }
+
+            // ==== BA. checkBlock() ==============================================================|
+
+            // ==== checkBlock globals ====
+            var currentElementSelectors = "";
+            let elementCounter = 0;
+            let elementsDeleted = 0;
+            let lowlight1Counter = 0;
+
+            // checks values within a specific block to choose what class to add to it.
+            function checkBlock(index, element, forceCheck) {
+
                 elementCounter++;
-                consolelog(elementCounter +" ("+ matchCode +"): "+ searchText +" | "+ regexLog);
-                regexLog = "";
+
+                let parentClassList = "";
+                if (jQuery(this).attr("class")) {
+                    parentClassList = jQuery(this).attr("class");
+                    //consolelog(classList, 1); // test: doublecheck parent class list
+                }
+
+                // main check block, only run if not checked or a check is forced.
+                if (!parentClassList || !checkedClassRegex.test(parentClassList) || forceCheck) {
+
+                    // ==== retrieve block data ===================================================|
+                    let blockTitle, secondText, thirdText, blockHref;
+                    if (currentElementSelectors && currentElementSelectors["textSelector"]) {
+                        blockTitle = jQuery(this).find(currentElementSelectors["textSelector"]).text();
+                        if(blockTitle){consolelog("("+ scriptTag +") t1 ["+ blockTitle +"]", "title");}
+                    }
+                    if (currentElementSelectors && currentElementSelectors["secondTextSelector"]) {
+                        secondText = jQuery(this).find(currentElementSelectors["secondTextSelector"]).text();
+                        if(secondText){consolelog("("+ scriptTag +") t2 ["+ secondText +"]", "secondText");}
+                    }
+                    if (currentElementSelectors && currentElementSelectors["thirdTextSelector"]) {
+                        thirdText = jQuery(this).find(currentElementSelectors["thirdTextSelector"]).text();
+                    }
+                    if (currentElementSelectors && currentElementSelectors["hrefSelector"]) {
+                        blockHref = jQuery(this).find(currentElementSelectors["hrefSelector"]).attr("href");
+                        if(blockHref){consolelog("("+ scriptTag +") href ["+ blockHref +"]", "blockHref");}
+                    }
+
+                    if (blockTitle || blockHref) {
+
+                        if (blockTitle) {
+                            blockTitle = blockTitle.trim();
+                        }
+
+                        let matchCode = "n0";
+                        let filterType = "txt";
+
+                        // check disableDelete option
+                        if (document.getElementById("disable-delete")) {
+                            disableDelete = document.getElementById("disable-delete").checked;
+                        }
+
+                        // stops after the first rule matched.
+                        // ## delete 1 ## =========================================================|
+                        
+                        if (checkRegex(blockTitle, delete1) ||
+                            /dlt1/i.test(blockTitle) || //cases caught by text replace script.
+                            (secondText && (checkRegex(secondText, delete1) || /dlt1/i.test(secondText))) ||
+                            (blockHref && checkRegex(blockHref, delete1))) {
+
+                            matchCode = "dlt1";
+                            
+                            if (secondText && checkRegex(secondText, delete1)) {
+                                filterType = "2nd";
+                            }else if (blockHref && checkRegex(blockHref, delete1)) {
+                                filterType = "href";
+                            }
+
+                            if (!disableDelete) {
+                                jQuery(this).remove();
+                                elementsDeleted++;
+                            }else {
+                                jQuery(this).addClass(classPrefix + matchCode);
+                                lowlight1Counter++;
+                            }
+                            
+                        // ## delete 2 ## =========================================================|
+
+                        }else if (checkRegex(blockTitle, delete2) || /dlt2/i.test(blockTitle) || (blockHref && checkRegex(blockHref, delete2))) {
+                            matchCode = "dlt2";
+
+                            if (document.getElementById("delete-delete2")) {
+                                deleteDelete2 = document.getElementById("delete-delete2").checked;
+                            }
+
+                            if (!disableDelete && deleteDelete2) {
+                                jQuery(this).remove();
+                                elementsDeleted++;
+                            }else {
+                                jQuery(this).addClass(classPrefix + matchCode);
+                                lowlight1Counter++;
+                            }
+                            
+                        // ## lowlight 1 ## =======================================================|
+
+                        }else if (checkRegex(blockTitle, lowlight1) ||
+                                checkRegex(blockTitle, lowlight1) ||
+                                /fr1/i.test(blockTitle) ||
+                                (blockHref && checkRegex(blockHref, lowlight1))) {
+
+                            matchCode = "ll1";
+                            jQuery(this).addClass(classPrefix +"lowlight1");
+                            lowlight1Counter++;
+                            
+                        // ## lowlight 2 ## =======================================================|
+
+                        }else if (checkRegex(blockTitle, lowlight2)) {
+                            matchCode = "ll2";
+                            jQuery(this).addClass(classPrefix +"lowlight2");
+                        }
+
+                        // ## highlight 1/2 ## ====================================================|
+
+                        if (matchCode == "n0") {
+                            if (checkRegex(blockTitle, highlight1)) {
+                                matchCode = "h1";
+                                jQuery(this).addClass(classPrefix +"highlight1");
+                            }else if (checkRegex(blockTitle, highlight2)) {
+                                matchCode = "h2";
+                                jQuery(this).addClass(classPrefix +"highlight2");
+                            }
+                            //additionalCheck(searchText);
+                        }
+
+                        createNotif(elementCounter +" ("+ filterType +")"+ matchCode, regexLog, blockTitle);
+                        if (enableLogMessages) {
+                            let printMsg;
+                            printMsg = "("+ scriptTag +") ";
+                            printMsg += elementCounter;
+                            printMsg += " ("+ matchCode +")";
+                            printMsg += ": "+ blockTitle;
+                            if(regexLog){printMsg += "("+ regexLog +")";}
+                            if(thirdText){printMsg += "("+ thirdText.trim() +")";}
+                            //printMsg += "("+ groupLink +")";
+                            consolelog(printMsg, matchCode +"-MA");
+                        }
+                        if (regexLog) {regexLog = "";}
+                    }else {
+                        //consolelog("("+ classPrefix +"element-"+ elementCounter +")("+ selectorType +") no text found.");
+                    }
+                }
+
+            } // end function checkBlock()
+
+            // ==== BB. checkBlock() ==============================================================|
+
+            let printedSelectors = 0; // used to print parentSelectors just once.
+            function checkBlocks() {
+
+                const logRTKey = "log-"+ scriptPrefix +"runtimes";
+                if (document.getElementById(logRTKey)) {
+                    logRuntimes = document.getElementById(logRTKey).checked;
+                }
+
+                if (enableLogMessages && logRuntimes) {
+                    var startTime = performance.now();
+                }
+                // on sites with multiple block selectors, checks against all block selectors
+                for (let index = 0; index < parentSelectors.length; index++) {
+                    currentElementSelectors = parentSelectors[index];
+                    let superParentSelector = currentElementSelectors["superParentSelector"];
+                    let textSelector = currentElementSelectors["textSelector"];
+                    let secondTextSelector = currentElementSelectors["secondTextSelector"];
+                    let hrefSelector = currentElementSelectors["hrefSelector"];
+                    let thirdTextSelector = currentElementSelectors["thirdTextSelector"];
+                    let selectorsMessage =
+                        "("+ scriptTag +") selectors: "+
+                        superParentSelector +" | "+
+                        textSelector +" | "+
+                        secondTextSelector +" | "+
+                        hrefSelector +" | "+
+                        thirdTextSelector +" ##";
+                    if (!printedSelectors) {
+                        printedSelectors = 1;
+                        consolelog( selectorsMessage, "selectors");
+                    }
+
+                    jQuery(superParentSelector).each(checkBlock);
+                }
+
+                // ==== update block counter ====
+                if (elementCounter) {
+                    let counterText = "B DLT: "+ elementsDeleted +" |  LL1: "+ lowlight1Counter +" | B: "+ elementCounter;
+                    jQuery("#"+ scriptTag +"-counter").text(counterText);
+                    jQuery("#"+ scriptTag +"-counter").addClass("notif-green");
+                }
+
+                // adds a marker as a class that identifies what was checked.
+                let elementLog = "";
+                if (markCheckedBlocks) {
+                    // for each selector
+                    elementCounter = 0;
+                    for (let index = 0; index < parentSelectors.length; index++) {
+                        //for each block selected
+                        jQuery(parentSelectors[index]["superParentSelector"]).each(function(){
+                            let classList = "";
+                            if (jQuery(this).attr("class")) {
+                                classList = jQuery(this).attr("class");
+                            }
+                            if (!classList || !checkedClassRegex.test(classList)){
+                                elementCounter++;
+                                jQuery(this).addClass(classPrefix +"element-"+ elementCounter);
+                                elementLog = elementLog +" "+ elementCounter;
+                            }
+
+                        });
+                    }
+                    //console.log(elementLog); //test: check checked elements
+                }
+
+                // logs the run time of the script.
+                if (enableLogMessages && logRuntimes) {
+                    const endTime = performance.now();
+                    const runTime = ((endTime - startTime) / 1000).toFixed(2);
+                    if (runTime < 1) {
+                        consolelog("("+ scriptTag +") finished in less than 1 second.", "RUNT");
+                    }else {
+                        consolelog("("+ scriptTag +") finished after " + runTime + " seconds.", "RUNT");
+                    }
+                }
             }
-        }
 
-    } // end function checkBlock()
+            // ==== BC. checkRegex() ==============================================================|
 
-    function checkBlocks() {
-        if (enableLogMessages && logRuntime) {
-            var startTime = performance.now();
-        }
+            // checks string against given list of regular expressions.
+            // resets lastIndex of global regex
+            let regexLog = "";
+            function checkRegex(string, regexList) {
+                for (let i = 0; i < regexList.length; i++) {
+                    let regexRule = regexList[i];
+                    if (generalizeSpace && / /.test(regexRule.toString())) {
+                        let regexFlags = regexRule.flags;
+                        regexRule = new RegExp(regexRule.toString().replace(/ /g,"(\\W|_)").replace(/(^\/|\/$|\/\w*)/g,''), regexFlags); // converts /ab cd/i to /ab(\W|_)cd)i
+                    }
+                    if (regexRule.test(string)) {
+                        if (regexLog) {
+                            regexLog = regexLog +", "+ regexList[i];
+                        }else {
+                            regexLog = regexList[i];
+                        }
+                        if (/\/i?g/.test(regexList[i])) {//regex global modifier needs to be reset.
+                            regexList[i].lastIndex = 0;
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            }
 
-        jQuery(blockSelector).each(checkBlock);
+            // ==== BD. createNotif() =============================================================|
 
-        if (enableLogMessages && logRuntime) {
-            const endTime = performance.now();
-            const runTime = ((endTime - startTime) / 1000).toFixed(2);
-            if (runTime < 1) {
-                console.log('(H/L) finished in less than 1 second.');
+            let scriptChar = "b"; // indicator of which script created this notif.
+            function createNotif(notifLabel, notifRule, notifText) { //notifRule needs to match notifTypes
+
+                if (enableNotifications) {
+                    let additionalClass, notifContainer;
+                    if (/dlt/i.test(notifLabel) && /dlt/i.test(notifText)) { // caught by text replace
+                        additionalClass = "notif-yellow";
+                        notifContainer = "dlt-container";
+                    }else if (/dlt/i.test(notifLabel)) {
+                        additionalClass = "notif-red";
+                        notifContainer = "dlt-container";
+                    }else if (/ll/i.test(notifLabel)) {
+                        additionalClass = "notif-orange";
+                        notifContainer = "ll-container";
+                    }else {
+                        additionalClass = "notif-gray";
+                        notifContainer = "ot-container";
+                        //jQuery("#"+ notifContainer).removeClass("notif-hidden1");
+                    }
+
+                    let newNotif =
+                        "<div class='notif-instance "+ additionalClass +"'><div>"+ scriptChar +" "+ notifLabel +"</div>"+
+                            "<div class='notif-hidden'>"+ notifRule +"</div>"+
+                            "<div class='notif-text' hidden>"+ notifText+"</div>"+ // to be displayed at the bottom left.
+                        "</div>";
+
+                    const enabledNotifTypesString = // set to only create notifs for dlt1 and ll1.
+                        "dlt1"+
+                        "|ll1";
+                    const enabledNotifTypesRegex = new RegExp(enabledNotifTypesString, "i");
+                    if (enabledNotifTypesRegex.test(notifLabel)) {
+                        jQuery("#"+ notifContainer).append(newNotif);
+
+                        if (/ll1/i.test(notifLabel)) {
+                            jQuery("#ll-container").removeClass("notif-hidden1");
+                        }
+
+                        jQuery(".notif-instance").click(function(){
+                            jQuery("#notif-container2").empty();
+                        });
+
+                        if (document.getElementById("autohide-notifications")) {
+                            autohideNotifs = document.getElementById("autohide-notifications").checked; // script option; defined at top.
+                        }
+                        if (autohideNotifs) {
+                            const notifDuration = 10; // default 10; amount of seconds notifications are displayed before disappearing.
+                            setTimeout(function() {
+                                jQuery(".notif-instance").remove();
+                            }, notifDuration*1000);
+                        }
+                    }
+                }
+            } // end function createNotif()
+
+            // ==== CA. script execution block ====================================================|
+            if (document.getElementById("dynamic-checking")) {
+                dynamicChecking = document.getElementById("dynamic-checking").checked;
+            }
+
+            if (dynamicChecking) {
+                let allSelectors = "";
+                for (let index = 0; index < parentSelectors.length; index++) {
+                    if (allSelectors) {
+                        allSelectors += ","+ parentSelectors[index]["superParentSelector"];
+                    }else {
+                        allSelectors = parentSelectors[index]["superParentSelector"];
+                    }
+                }
+                //console.log(allSelectors);
+                waitForKeyElements(allSelectors, checkBlocks);
             }else {
-                console.log('(H/L) finished after ' + runTime + ' seconds.');
+                checkBlocks();
+            }
+
+            // ==== CB. script button =============================================================|
+            let buttonContainerId = "ctb-container1";
+
+            if (jQuery("#"+ buttonContainerId).length) {
+                jQuery("#"+ buttonContainerId).prepend("<div id='"+ scriptTag +"-reset' class='ctb-blue ctb-rounded-block'>"+ scriptTag +"</div>"); //added to beginning
+                jQuery("#"+ scriptTag +"-reset").click(function () {
+                    elementCounter = 0;
+                    checkBlocks();
+                });
+            }
+        } //end if (parentSelectors)
+
+        function consolelog(text, messageType) {
+            if (enableLogMessages && enabledMessagesRegex.test(messageType)) { // script option; defined at top.
+                console.log(text);
             }
         }
-    }
 
-    if (dynamicChecking) {
-        waitForKeyElements(blockSelector, checkBlocks);
-    } else {
-        checkBlocks();
-    }
+        // ==== ZZ. script end ====================================================================|
+        consolelog("#### ("+ scriptTag +") script finished. ####", "EXEC");
 
-    // ==== optional button code ==================================================================|
-    if (addFilterButton) {
-        if (!jQuery("#wt-buttons").length) {
-            consolelog("(H/L) created #wt-buttons.");
-            jQuery("body").prepend('<div id="wt-buttons"><div id="lf-reset">H/L</div><div id="wt-close">&times;</div></div>');
-            jQuery("#wt-close").click(function () { jQuery("#wt-buttons").remove(); });
+    } // end if (runScript)
 
-            const webToolsCss =
-`<style type="text/css">
-    #wt-buttons {
-        width: 40px;
-        display: block !important;
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        z-index: 9000;
-        opacity: `+ buttonTransparency + `;
-    }
-    #wt-buttons:hover {
-        opacity: 1;
-    }
-    #wt-buttons div {
-        display: block !important;
-        padding: 5px;
-        border-radius: 5px;
-        margin-top: 2px;
-        font-size: initial !important;
-        font-weight: bold;
-        color: white;
-        cursor: pointer;
-    }
-    #wt-close {
-        background: #777777;
-        text-align: center;
-    }
-</style>`;
-            jQuery(document.body).append(webToolsCss);
-        } else {
-            jQuery("#wt-buttons").prepend('<div id="lf-reset">H/L</div>');
-        }
-        const listFilterCss =
-`<style>
-    #lf-reset {
-        background: #177e14;
-    }
-</style>`;
-        jQuery(document.body).append(listFilterCss);
-        jQuery("#lf-reset").click(function () {
-            elementCounter = 0;
-            checkBlocks();
-        });
-    }
-
-    var filterCss =
-`<style>
-    `+ blockSelector +`.lf-highlight1 {
-        background: #baffc9;/*green*/
-    }
-    `+ blockSelector +`.lf-highlight2 {
-        background: #ffffba;/*yellow*/
-    }
-    `+ blockSelector +`.lf-lowlight1 {
-        background: #ffdfba;/*orange*/
-        opacity: .3;
-    }
-    `+ blockSelector +`.lf-lowlight2 {
-        background: #ffccca;/*red*/
-        opacity: .5;
-    }
-</style>`;
-    jQuery(document.body).append(filterCss);
-
-    consolelog("#### list filter script finished. ####");
 })();
