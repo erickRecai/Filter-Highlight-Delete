@@ -366,7 +366,11 @@
                 hrefSelector: window.localStorage.getItem(keyList[3]),
                 thirdTextSelector: window.localStorage.getItem(keyList[4])
             };
-            parentSelectors.push(customSelectors);
+            if (parentSelectors){
+                parentSelectors.push(customSelectors);
+            }else {
+                parentSelectors = [customSelectors];
+            }
         }
 
         // ==== AE. main code start ===============================================================|
@@ -375,11 +379,11 @@
             consolelog(parentSelectors, "selectors");
 
             // ==== script labels ====
-            const checkedClassRegex = new RegExp("\\b"+ scriptTag +"element");
+            const checkedClassRegex = new RegExp(classPrefix +"element");
 
             // ==== AF. script CSS ================================================================|
             let enableScriptCSS = 1;
-            const scriptCSSKey = "log-"+ scriptPrefix +"all";
+            const scriptCSSKey = "enable-"+ scriptPrefix +"css";
             if (document.getElementById(scriptCSSKey)) {
                 enableScriptCSS = document.getElementById(scriptCSSKey).checked;
             }
@@ -398,11 +402,13 @@
 
         .`+classPrefix+`lowlight2 {
             opacity: .5;
-            background: #f004 !important;
+            background: #ff9800 !important;
         }
 
         .`+classPrefix+`highlight1
-        {background: #0f0 !important;}
+        {background: #62bb66 !important;}
+        .`+classPrefix+`highlight2
+        {background: #fff281 !important;}
     </style>`;
                 jQuery(document.body).append(scriptCSS);
             }
