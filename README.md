@@ -22,12 +22,13 @@ You can define multiple selector sets should you want to filter multiple types o
 ![Default Selectors](/instruction-images/1a-selectors.png)
 
 A CSS extention would help in visually identifing what your selectors select.
-Here are some CSS rules you can use.
-Parent CSS:
-`{border:solid 3px #fcc}`
-Text CSS:
-`{border:solid 2px #0f0}`
-Just disable these rules when done.
+
+Here are some CSS rules you can use.  
+Parent CSS:  
+`{border:solid 2px #fcc}`  
+Text CSS:  
+`{border:solid 2px #0f0}`  
+Just disable these rules when done.  
 ![CSS to check selectors](/instruction-images/1b-selecting-selectors.png)
 * Sites may change class names so you may need to update these selectors from time to time.
 
@@ -39,10 +40,12 @@ Just disable these rules when done.
 
 ### 3. Set up css for Lowlight and Highlight classes.
 The element classes used are:
-`.fhd-lowlight1 //strong lowlight
+```
+.fhd-lowlight1 //strong lowlight
 .fhd-lowlight2 //weak lowlight
 .fhd-highlight1 //strong highlight
-.fhd-highlight2`
+.fhd-highlight2
+```
 
 #### The default CSS which can be switched on using Script Options:
 ![Default Filter CSS](/instruction-images/3a-filter-css.png)
