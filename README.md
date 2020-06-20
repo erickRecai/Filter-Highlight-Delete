@@ -1,6 +1,7 @@
 # Filter-Highlight-Delete
 A userscript that highlights, lowlights, or deletes elements based on child text elements.  
 Preconfigured to work on Google News, Youtube and Reddit.
+This script only works when selectors and filter rules are set.
 
 # How it works
 Using jQuery, this script either deletes or adds an html class to an element if the element matches your selectors and your filter rules.
