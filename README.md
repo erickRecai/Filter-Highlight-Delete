@@ -1,10 +1,10 @@
 # Filter-Highlight-Delete
-A userscript that highlights, lowlights, or deletes elements based on child text elements.
+A userscript that highlights, lowlights, or deletes elements based on child text elements.  
 Preconfigured to work on Google News, Youtube and Reddit.
 
 # How it works
 Using jQuery, this script either deletes or adds an html class to an element if the element matches your selectors and your filter rules.
-A more throrough description of how the script works is within the code itself.
+A more thorough description of how the script works is within the code itself.
 
 # Installation
 Requires a browser extension that enables userscripts to install this userscript. I personally use Tampermonkey but other extensions should work as well.  
