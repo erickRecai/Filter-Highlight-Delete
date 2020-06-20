@@ -50,3 +50,15 @@ The element classes used are:
 
 #### The default CSS which can be switched on using Script Options:
 ![Default Filter CSS](/instruction-images/3a-filter-css.png)
+
+# Additional functions can be added with Collapsable Toolbar, Script Options, and Custom Rules
+
+#### Collapsable Toolbar adds a persistent element which you can hide or close. This is mainly to contain various script options and buttons.
+
+#### Script Options allows you change various script options and to disable/enable specific filter rules.
+![Script Options](/instruction-images/4a-script-options.png)
+
+#### Custom Rules gives you the ability to define filter rules and selectors
+
+![Custom Rules](/instruction-images/4b-custom-rules.png)
+
