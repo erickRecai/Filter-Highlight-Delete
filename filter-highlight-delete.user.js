@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Filter, Highlight & Delete
 // @namespace    https://github.com/erickRecai
-// @version      1.04.06
+// @version      1.04.07
 // @description  Highlights, Lowlights, or Deletes page elements based on their text.
 // @author       guyRicky
 
@@ -24,9 +24,15 @@
     const scriptTag = "FHD"; // used to mark script sources in console log.
 
     let runScript = 1;
-    const runScriptKey = "enable-"+ scriptPrefix +"script";
-    if (document.getElementById(runScriptKey)) { // check runScript option.
-        runScript = document.getElementById(runScriptKey).checked;
+    runScript = getOptionState("enable-"+ scriptPrefix +"script", runScript);
+
+    // = getOptionState(, );
+    // used to update option if 'script option' is set.
+    function getOptionState(idName, currentState) {
+        if (document.getElementById(idName)) {
+            return document.getElementById(idName).checked;
+        }
+        return currentState;
     }
 
     if (runScript) {
@@ -72,8 +78,12 @@
             - applies checked marker to a block after a block is fully checked.
     
             ==== version log ======================================================================|
+            == 1.04.07 ==
+            - getOptionState()
+            - retrieveLocalRules()
+            == 1.04.06 ==
+            - cleaned for general use.
             == 1.4.05 == -- "custom lists" --
-    
             == 1.4.04 == -- "main filter" --
             - updated to be sole filter
             == 1.4.3 == -- "delete2" --
@@ -185,83 +195,49 @@
             ];
 
             // ==== AAG. local rules ==============================================================|
-            
-            let keyName = "Delete1";
-            if (window.localStorage.getItem(keyName)) {
-                let localRules = window.localStorage.getItem(keyName);
-                localRules = localRules.split(";");
-                for (let index = 0; index < localRules.length; index++) { // converts a string of rules to an array of regex.
-
-                    localRules[index] = localRules[index].split("##")[0].trim();
-
-                    if (localRules[index]) {
-                        let ruleFlags = localRules[index].split("/")[1];
-                        if (ruleFlags) {
-                            ruleFlags = ruleFlags.trim();
-                            //console.log(ruleFlags);
-                        }
-                        localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
-                        localRules[index] = new RegExp(localRules[index], ruleFlags);
-                        ruleFlags = "";
-                    }
-                }
-                localRules = localRules.filter(Boolean);
-                consolelog(localRules, "local-rules");
-
+           
+            let localRules = retrieveLocalRules("Delete1");
+            if (localRules) {
                 delete1 = delete1.concat(localRules);
             }
-
-            keyName = "Lowlight1";
-            if (window.localStorage.getItem(keyName)) {
-                let localRules = window.localStorage.getItem(keyName);
-                //console.log(localRules);
-                localRules = localRules.split(";");
-                //console.log(localRules);
-                //console.log(typeof localRules[0]);
-                for (let index = 0; index < localRules.length; index++) {
-
-                    localRules[index] = localRules[index].split("##")[0];
-
-                    if (localRules[index]) {
-                        let ruleFlags = localRules[index].split("/")[1];
-                        localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
-                        localRules[index] = new RegExp(localRules[index], ruleFlags);
-                        //console.log(localRules[index]);
-                        ruleFlags = "";
-                    }
-                }
-                localRules = localRules.filter(Boolean);
-                consolelog(localRules, "local-rules");
-
+            localRules = retrieveLocalRules("Lowlight1");
+            if (localRules) {
                 lowlight1 = lowlight1.concat(localRules);
             }
-            
-            keyName = "Highlight1";
-            if (window.localStorage.getItem(keyName)) {
-                let localRules = window.localStorage.getItem(keyName);
-                //console.log(localRules);
-                localRules = localRules.split(";");
-                //console.log(localRules);
-                //console.log(typeof localRules[0]);
-                for (let index = 0; index < localRules.length; index++) {
-
-                    localRules[index] = localRules[index].split("##")[0];
-
-                    if (localRules[index]) {
-                        let ruleFlags = localRules[index].split("/")[1];
-                        localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
-                        localRules[index] = new RegExp(localRules[index], ruleFlags);
-                        //console.log(localRules[index]);
-                        ruleFlags = "";
-                    }
-                }
-                localRules = localRules.filter(Boolean);
-                consolelog(localRules, "local-rules");
-
+            localRules = retrieveLocalRules("Highlight1");
+            if (localRules) {
                 highlight1 = highlight1.concat(localRules);
             }
-
-        }
+            
+            function retrieveLocalRules(keyName) {
+                if (window.localStorage.getItem(keyName)) {
+                    let localRules = window.localStorage.getItem(keyName);
+                    localRules = localRules.split(";");
+                    for (let index = 0; index < localRules.length; index++) { // converts a string of rules to an array of regex.
+    
+                        localRules[index] = localRules[index].split("##")[0].trim();
+    
+                        if (localRules[index]) {
+                            let ruleFlags = localRules[index].split("/")[1];
+                            if (ruleFlags) {
+                                ruleFlags = ruleFlags.trim();
+                            }
+                            localRules[index] = localRules[index].split("/")[0].replace(/^\//, "");
+                            localRules[index] = new RegExp(localRules[index], ruleFlags);
+                            ruleFlags = "";
+                        }
+                    }
+                    localRules = localRules.filter(Boolean);
+                    if (localRules) {
+                        consolelog(localRules, "local-rules");
+                        return localRules;
+                    }else {
+                        return false;
+                    }
+                } // end if (localStorage.getItem(keyName))
+                return false;
+            } // end function retrieveLocalRules()
+        } // end if(1) of filter rules.
 
         // ==== AB. selectors by site list ========================================================|
         // needs to be set and matched to function on a site.
@@ -356,7 +332,6 @@
         }
         
         // ==== local selectors ====
-
         let keyList = ["parentSelector", "textSelector", "secondTextSelector", "hrefSelector", "thirdTextSelector"];
         if (window.localStorage.getItem(keyList[0])) {
             let customSelectors = {
@@ -366,7 +341,7 @@
                 hrefSelector: window.localStorage.getItem(keyList[3]),
                 thirdTextSelector: window.localStorage.getItem(keyList[4])
             };
-            if (parentSelectors){
+            if (parentSelectors) {
                 parentSelectors.push(customSelectors);
             }else {
                 parentSelectors = [customSelectors];
@@ -377,9 +352,6 @@
         if (parentSelectors) {
             
             consolelog(parentSelectors, "selectors");
-
-            // ==== script labels ====
-            const checkedClassRegex = new RegExp(classPrefix +"element");
 
             // ==== AF. script CSS ================================================================|
             let enableScriptCSS = 1;
@@ -418,24 +390,16 @@
             // ==== notification options ====
 
             // 'script options' options
-            let enableBlockCounter = 1;
-            let enableNotifications = 1;
-            let autohideNotifs = 0; // default 0; notifs disappear after a set period of time.
+            let enableBlockCounter = 0;
+            enableBlockCounter = getOptionState("enable-"+ scriptPrefix +"counter", enableBlockCounter);
+            let enableNotifications = 0;
+            enableNotifications = getOptionState("enable-"+ scriptPrefix +"notifs", enableNotifications);
+            let autohideNotifs = 0; // default 0; notifs disappear after a set period of time. used in createNotif().
             let startCollapsed = 1; // default 1;
-
-            const enableCounterKey = "enable-"+ scriptPrefix +"counter";
-            if (document.getElementById(enableCounterKey)) {
-                enableBlockCounter = document.getElementById(enableCounterKey).checked;
-            }
-
-            const enableNotifKey = "enable-"+ scriptPrefix +"notifs";
-            if (document.getElementById(enableNotifKey)) {
-                enableNotifications = document.getElementById(enableNotifKey).checked;
-            }
 
             // notif css variables.
             const notifsHex = "#ddd";
-            const notifsOpacity = .4; // default .2; set to a value between 0 and 1, 1 is no transparency, .5 is 50% transparency.
+            const notifsOpacity = .4; // default .4; set to a value between 0 and 1, 1 is no transparency, .5 is 50% transparency.
             const notifsWidth = 120; // default 120; width in pixels of each notification.
 
             let notifContainerId = "notif-main-container";
@@ -691,11 +655,6 @@
                 }
                 jQuery(document.body).append(notifsCss);
             }
-
-            let blockCounterkey = "enable"+ scriptPrefix +"counter";
-            if (document.getElementById(blockCounterkey)) {
-                enableBlockCounter = document.getElementById(blockCounterkey).checked;
-            }
             if (enableBlockCounter) {
                 jQuery("#notif-container1").prepend("<div id='"+ scriptTag +"-counter' class='s-counter .notif-rounded-block'>B No Blocks Matched.</div>");
             }
@@ -707,6 +666,9 @@
             let elementCounter = 0;
             let elementsDeleted = 0;
             let lowlight1Counter = 0;
+            
+            // used to find if classlist contains the checked class marker.
+            const checkedClassRegex = new RegExp(classPrefix +"element");
 
             // checks values within a specific block to choose what class to add to it.
             function checkBlock(index, element, forceCheck) {
@@ -748,11 +710,8 @@
 
                         let matchCode = "n0";
                         let filterType = "txt";
-
-                        // check disableDelete option
-                        if (document.getElementById("disable-delete")) {
-                            disableDelete = document.getElementById("disable-delete").checked;
-                        }
+                        
+                        disableDelete = getOptionState("disable-delete", disableDelete);
 
                         // stops after the first rule matched.
                         // ## delete 1 ## =========================================================|
@@ -783,9 +742,7 @@
                         }else if (checkRegex(blockTitle, delete2) || /dlt2/i.test(blockTitle) || (blockHref && checkRegex(blockHref, delete2))) {
                             matchCode = "dlt2";
 
-                            if (document.getElementById("delete-delete2")) {
-                                deleteDelete2 = document.getElementById("delete-delete2").checked;
-                            }
+                            deleteDelete2 = getOptionState("delete-delete2", deleteDelete2);
 
                             if (!disableDelete && deleteDelete2) {
                                 jQuery(this).remove();
@@ -846,15 +803,13 @@
 
             } // end function checkBlock()
 
-            // ==== BB. checkBlock() ==============================================================|
+            // ==== BB. checkBlocks() =============================================================|
 
             let printedSelectors = 0; // used to print parentSelectors just once.
             function checkBlocks() {
 
                 const logRTKey = "log-"+ scriptPrefix +"runtimes";
-                if (document.getElementById(logRTKey)) {
-                    logRuntimes = document.getElementById(logRTKey).checked;
-                }
+                logRuntimes = getOptionState("log-"+ scriptPrefix +"runtimes", logRuntimes);
 
                 if (enableLogMessages && logRuntimes) {
                     var startTime = performance.now();
@@ -994,9 +949,7 @@
                             jQuery("#notif-container2").empty();
                         });
 
-                        if (document.getElementById("autohide-notifications")) {
-                            autohideNotifs = document.getElementById("autohide-notifications").checked; // script option; defined at top.
-                        }
+                        autohideNotifs = getOptionState("autohide-notifications", autohideNotifs);
                         if (autohideNotifs) {
                             const notifDuration = 10; // default 10; amount of seconds notifications are displayed before disappearing.
                             setTimeout(function() {
@@ -1008,9 +961,7 @@
             } // end function createNotif()
 
             // ==== CA. script execution block ====================================================|
-            if (document.getElementById("dynamic-checking")) {
-                dynamicChecking = document.getElementById("dynamic-checking").checked;
-            }
+            dynamicChecking = getOptionState("dynamic-checking", dynamicChecking);
 
             if (dynamicChecking) {
                 let allSelectors = "";

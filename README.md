@@ -58,7 +58,7 @@ The element classes used are:
 #### Script Options allows you change various script options and to disable/enable specific filter rules.
 ![Script Options](/instruction-images/4a-script-options.png)
 
-#### Custom Rules gives you the ability to define filter rules and selectors
+#### Custom Rules gives you the ability to define filter rules and selectors without going into the script itself.
 
 ![Custom Rules](/instruction-images/4b-custom-rules.png)
 
