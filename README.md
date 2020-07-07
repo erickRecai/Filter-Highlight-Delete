@@ -43,7 +43,7 @@ Just disable these rules when done.
 ![Custom Selectors](/instruction-images/1z-custom-selectors.png)
 
 ### 2. Set up some filter rules.
-[More information about regular expressions can be found here.](https://www.w3schools.com/jsref/jsref_obj_regexp.asp)
+[More information about regular expressions can be found here.](https://www.w3schools.com/jsref/jsref_obj_regexp.asp)  
 ![Default Filter Rules](/instruction-images/2a-filter-rules.png)
 
 ### 3. Set up css for Lowlight and Highlight classes.
@@ -63,7 +63,7 @@ The element classes used are:
 #### [Collapsable Toolbar](https://github.com/erickRecai/Collapsable-Toolbar) adds a persistent element which you can hide or close. This is mainly to contain various script options and buttons.
 
 #### [Script Options](https://github.com/erickRecai/Script-Options) allows you change various script options and to disable/enable specific filter rules.
-Otherwise, these options can be changed within the script in the section `AC. script options`.
+Otherwise, these options can be changed within the script in the section `AC. script options`.  
 ![Script Options](/instruction-images/4a-script-options.png)
 
 #### [Custom Rules](https://github.com/erickRecai/Custom-Rules) gives you the ability to define filter rules and selectors without going into the script itself.
