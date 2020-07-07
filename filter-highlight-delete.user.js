@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Filter, Highlight & Delete
 // @namespace    https://github.com/erickRecai
-// @version      1.04.07
+// @version      1.04.07b
 // @description  Highlights, Lowlights, or Deletes page elements based on their text.
 // @author       guyRicky
 
@@ -39,16 +39,12 @@
 
         if(0){/*
 
-            == last update: 6/18/2020 ==
+            == last update: 7/05/2020 ==
     
             ==  todo ==
     
-            1. test gen version on google and reddit with custom rules.
-
-            5. B1, change local rule retrieval to a function.
             5. B2, (custom rules script), generate selector block from selectors made.
             10. C1, change autohide notifs to apply per notif, not to all notifs.
-            20. Z1, implement priority.
     
             ==== how it works =====================================================================|
     
@@ -78,24 +74,11 @@
             - applies checked marker to a block after a block is fully checked.
     
             ==== version log ======================================================================|
+            == 1.04.07b ==
+            - fullCheck on manual runs.
             == 1.04.07 ==
             - getOptionState()
             - retrieveLocalRules()
-            == 1.04.06 ==
-            - cleaned for general use.
-            == 1.4.05 == -- "custom lists" --
-            == 1.4.04 == -- "main filter" --
-            - updated to be sole filter
-            == 1.4.3 == -- "delete2" --
-            - updated for delete2 list.
-            == 1.4.2 == -- "checked marker"--
-            - changed how the checked marker class is added.
-            == 1.4.0 == --"notifs"--
-            - added notifs.
-            == 1.3.1 == -- "consolelog" --
-            - consolelog update.
-            == 1.3.0 ==
-            - implemented multiple selectors per site
         */}
 
         if(0){/*
@@ -127,14 +110,11 @@
         // controls if messages are made to the browser's console.
 
         let enableLogMessages = 1; // set to 1 to show console messages, required to enable the following message rules.
-        const enableConsoleMessagesKey = "log-"+ scriptPrefix +"msg";
-        if (document.getElementById(enableConsoleMessagesKey)) {
-            enableLogMessages = document.getElementById(enableConsoleMessagesKey).checked;
-        }
+        enableLogMessages = getOptionState("log-"+ scriptPrefix +"msg", enableLogMessages);
 
         let enabledMessages =
-            "("+
-            "DLT|LL1|"+
+            "DLT|"+
+            "LL1|"+
             //"-MA|"+ // all matches
             "selectors|"+
 
@@ -144,17 +124,13 @@
 
             "RUNT|"+ // run time messages.
             "EXEC|"+ // execution messages.
-            "1"; // mainly 
+            "1"; // high priority messages.
 
-        let logAll = 0; // if 1, logs all titles from found blocks.
-        const logAllKey = "log-"+ scriptPrefix +"all";
-        if (document.getElementById(logAllKey)) {
-            logAll = document.getElementById(logAllKey).checked;
-        }
+        let logAll = 0; // if 1, logs all titles from blocks.
+        logAll = getOptionState("log-"+ scriptPrefix +"all", logAll);
         if (logAll) {
             enabledMessages = enabledMessages.concat("|title");
         }
-        enabledMessages = enabledMessages.concat(")");
         const enabledMessagesRegex = new RegExp(enabledMessages,"i"); // used in consolelog().
 
         consolelog("#### ("+ scriptTag +") start. ####", "EXEC");
@@ -287,7 +263,7 @@
                         secondTextSelector: "", //ex: source/author
                         hrefSelector: "",
                         thirdTextSelector: ""}, //ex: description
-                        // other than the parent selector, other selectors are optional, order not required.
+                        // other than the parent selector, other selectors are optional, order does not need to be kept.
             ]},
         */}
 
@@ -299,16 +275,9 @@
         // these options are used as default if the option is not set by the user in (script options).
 
         let markCheckedBlocks = 1; // default 1; does all possible checks before applying a special checked class.
-        const markCheckedKey = scriptPrefix +"mark-checked";
-        if (document.getElementById(markCheckedKey)) {
-            markCheckedBlocks = document.getElementById(markCheckedKey).checked;
-        }
+        //checked in checkBlocks().
 
         let dynamicChecking = 1; // default 1; set to 1 to run the script automatically when new image elements are detected.
-        const dynamicCheckingKey = "enable-"+ scriptPrefix +"dynamic-checking";
-        if (document.getElementById(dynamicCheckingKey)) {
-            dynamicChecking = document.getElementById(dynamicCheckingKey).checked;
-        }
 
         let logRuntimes = 1; // set to 1 to log to console how long this takes to run.
 
@@ -355,11 +324,9 @@
 
             // ==== AF. script CSS ================================================================|
             let enableScriptCSS = 1;
-            const scriptCSSKey = "enable-"+ scriptPrefix +"css";
-            if (document.getElementById(scriptCSSKey)) {
-                enableScriptCSS = document.getElementById(scriptCSSKey).checked;
-            }
-            if  (enableScriptCSS)   {
+            enableScriptCSS = getOptionState("log-"+ scriptPrefix +"all", enableScriptCSS);
+
+            if (enableScriptCSS) {
                 const scriptCSS =
     `<style type="text/css">
         .`+classPrefix+`dlt1,
@@ -386,8 +353,6 @@
             }
 
             // ==== AD. notif block ===============================================================|
-
-            // ==== notification options ====
 
             // 'script options' options
             let enableBlockCounter = 0;
@@ -666,14 +631,16 @@
             let elementCounter = 0;
             let elementsDeleted = 0;
             let lowlight1Counter = 0;
-            
+            //internal state, checks all blocks regardless if previously, changes state when function is ran manually.
+            let fullCheck = 0;
+
             // used to find if classlist contains the checked class marker.
             const checkedClassRegex = new RegExp(classPrefix +"element");
 
             // checks values within a specific block to choose what class to add to it.
-            function checkBlock(index, element, forceCheck) {
+            function checkBlock() {
 
-                elementCounter++;
+                if(!fullCheck){elementCounter++;}
 
                 let parentClassList = "";
                 if (jQuery(this).attr("class")) {
@@ -682,7 +649,9 @@
                 }
 
                 // main check block, only run if not checked or a check is forced.
-                if (!parentClassList || !checkedClassRegex.test(parentClassList) || forceCheck) {
+                if (!parentClassList ||
+                    !checkedClassRegex.test(parentClassList) ||
+                    fullCheck) {
 
                     // ==== retrieve block data ===================================================|
                     let blockTitle, secondText, thirdText, blockHref;
@@ -784,6 +753,7 @@
                         }
 
                         createNotif(elementCounter +" ("+ filterType +")"+ matchCode, regexLog, blockTitle);
+
                         if (enableLogMessages) {
                             let printMsg;
                             printMsg = "("+ scriptTag +") ";
@@ -808,7 +778,6 @@
             let printedSelectors = 0; // used to print parentSelectors just once.
             function checkBlocks() {
 
-                const logRTKey = "log-"+ scriptPrefix +"runtimes";
                 logRuntimes = getOptionState("log-"+ scriptPrefix +"runtimes", logRuntimes);
 
                 if (enableLogMessages && logRuntimes) {
@@ -838,7 +807,7 @@
                 }
 
                 // ==== update block counter ====
-                if (elementCounter) {
+                if (elementCounter && !fullCheck) {
                     let counterText = "B DLT: "+ elementsDeleted +" |  LL1: "+ lowlight1Counter +" | B: "+ elementCounter;
                     jQuery("#"+ scriptTag +"-counter").text(counterText);
                     jQuery("#"+ scriptTag +"-counter").addClass("notif-green");
@@ -846,7 +815,8 @@
 
                 // adds a marker as a class that identifies what was checked.
                 let elementLog = "";
-                if (markCheckedBlocks) {
+                markCheckedBlocks = getOptionState(scriptPrefix +"mark-checked", markCheckedBlocks);
+                if (markCheckedBlocks && !fullCheck) {
                     // for each selector
                     elementCounter = 0;
                     for (let index = 0; index < parentSelectors.length; index++) {
@@ -865,6 +835,10 @@
                         });
                     }
                     //console.log(elementLog); //test: check checked elements
+                }
+
+                if (fullCheck) {
+                    fullCheck = 0;
                 }
 
                 // logs the run time of the script.
@@ -910,7 +884,7 @@
 
             let scriptChar = "b"; // indicator of which script created this notif.
             function createNotif(notifLabel, notifRule, notifText) { //notifRule needs to match notifTypes
-
+                enableNotifications = getOptionState("enable-"+ scriptPrefix +"notifs", enableNotifications);
                 if (enableNotifications) {
                     let additionalClass, notifContainer;
                     if (/dlt/i.test(notifLabel) && /dlt/i.test(notifText)) { // caught by text replace
@@ -925,7 +899,6 @@
                     }else {
                         additionalClass = "notif-gray";
                         notifContainer = "ot-container";
-                        //jQuery("#"+ notifContainer).removeClass("notif-hidden1");
                     }
 
                     let newNotif =
@@ -940,14 +913,13 @@
                     const enabledNotifTypesRegex = new RegExp(enabledNotifTypesString, "i");
                     if (enabledNotifTypesRegex.test(notifLabel)) {
                         jQuery("#"+ notifContainer).append(newNotif);
+                        jQuery(".notif-instance").click(function(){
+                            jQuery("#notif-container2").empty();
+                        });
 
                         if (/ll1/i.test(notifLabel)) {
                             jQuery("#ll-container").removeClass("notif-hidden1");
                         }
-
-                        jQuery(".notif-instance").click(function(){
-                            jQuery("#notif-container2").empty();
-                        });
 
                         autohideNotifs = getOptionState("autohide-notifications", autohideNotifs);
                         if (autohideNotifs) {
@@ -961,8 +933,30 @@
             } // end function createNotif()
 
             // ==== CA. script execution block ====================================================|
-            dynamicChecking = getOptionState("dynamic-checking", dynamicChecking);
 
+            consolelog("("+ scriptTag +") EXEC: Initial run.", "EXEC");
+            checkBlocks();
+            let runWhenReady = 0;
+            runWhenReady = getOptionState("run-when-ready", runWhenReady);
+            if (runWhenReady) {
+                jQuery(document).ready(function() { //after DOM has loaded.
+                    consolelog("("+ scriptTag +") EXEC: document.ready()", "EXEC");
+                    //fullCheck = 1;
+                    checkBlocks();
+                });
+            }
+
+            let runWhenLoaded = 0;
+            runWhenLoaded = getOptionState("run-when-loaded", runWhenLoaded);
+            if (runWhenLoaded) {
+                jQuery(window).on("load", function() { //after all initial images are loaded.
+                    consolelog("("+ scriptTag +") EXEC: window.load()", "EXEC");
+                    //fullCheck = 1;
+                    checkBlocks();
+                });
+            }
+
+            dynamicChecking = getOptionState("dynamic-checking", dynamicChecking);
             if (dynamicChecking) {
                 let allSelectors = "";
                 for (let index = 0; index < parentSelectors.length; index++) {
@@ -972,19 +966,23 @@
                         allSelectors = parentSelectors[index]["superParentSelector"];
                     }
                 }
-                //console.log(allSelectors);
-                waitForKeyElements(allSelectors, checkBlocks);
-            }else {
-                checkBlocks();
+                //consolelog(allSelectors, "selectors");
+
+                waitForKeyElements(allSelectors, function(){
+                    //consolelog("("+ scriptTag +") EXEC: waitForKeyElements().", "EXEC");
+                    checkBlocks();
+                });
             }
 
             // ==== CB. script button =============================================================|
             let buttonContainerId = "ctb-container1";
 
             if (jQuery("#"+ buttonContainerId).length) {
-                jQuery("#"+ buttonContainerId).prepend("<div id='"+ scriptTag +"-reset' class='ctb-blue ctb-rounded-block'>"+ scriptTag +"</div>"); //added to beginning
+                jQuery("#"+ buttonContainerId).prepend("<div id='"+ scriptTag +"-reset' class='ctb-blue ctb-rounded-block'>run "+ scriptTag +"</div>"); //added to beginning
                 jQuery("#"+ scriptTag +"-reset").click(function () {
+                    consolelog("("+ scriptTag +") EXEC: Script button.", "EXEC");
                     elementCounter = 0;
+                    fullCheck = 1;
                     checkBlocks();
                 });
             }
