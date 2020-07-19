@@ -7,7 +7,7 @@ Additional functionality can be added with [Collapsable Toolbar](https://github.
 
 This script works mostly client side aside from the following external libraries:  
 [jQuery](https://jquery.com/): Used to handle page events.  
-[waitForKeyElements](https://github.com/erickRecai/): Used to handle dynamic execution.
+[waitForKeyElements](https://greasyfork.org/en/scripts/5392-waitforkeyelements/code): Used to handle dynamic execution.
 
 # How it works
 Using jQuery, this script either deletes or adds an html class to an element if the element matches your selectors and your filter rules.
